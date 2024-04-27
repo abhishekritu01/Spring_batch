@@ -24,7 +24,6 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
-//@EnableBatchProcessing
 @AllArgsConstructor
 public class SpringBatchConfig {
 
@@ -68,7 +67,6 @@ public class SpringBatchConfig {
         return writer;
     }
 
-
     @Bean
     public Step step1(
             JobRepository jobRepository,
@@ -88,9 +86,7 @@ public class SpringBatchConfig {
         SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
         taskExecutor.setConcurrencyLimit(10);
         return taskExecutor;
-
     }
-
 
     @Bean
     public Job job(
@@ -101,6 +97,5 @@ public class SpringBatchConfig {
                 .flow(step1(jobRepository, platformTransactionManager))
                 .end()
                 .build();
-
     }
 }
