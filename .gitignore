@@ -1,0 +1,10 @@
+# IntelliJ IDEA
+.idea/
+
+# Spring Boot
+/target/
+*.iml
+*.ipr
+*.iws
+.idea/
+*.class
