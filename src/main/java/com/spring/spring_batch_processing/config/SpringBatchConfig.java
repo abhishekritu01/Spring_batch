@@ -5,6 +5,7 @@ import com.spring.spring_batch_processing.partition.StudentRangePartation;
 import lombok.AllArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
 import org.springframework.batch.core.repository.JobRepository;
@@ -14,13 +15,16 @@ import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -32,9 +36,10 @@ public class SpringBatchConfig {
     private final StudentWriter studentWriter;
 
     @Bean
-    public FlatFileItemReader<Student> reader() {
+    @StepScope
+    public FlatFileItemReader<Student> reader(@Value("#{jobParameters[fullPathFileName]}") String pathToFile) {
         FlatFileItemReader<Student> reader = new FlatFileItemReader<>();
-        reader.setResource(new ClassPathResource("students.csv"));
+        reader.setResource(new FileSystemResource(pathToFile)); // Use FileSystemResource instead of ClassPathResource
         reader.setName("CSV-Reader");
         reader.setLinesToSkip(1);
         reader.setLineMapper(lineMapper());
@@ -61,13 +66,6 @@ public class SpringBatchConfig {
         return new StudentProcessor();
     }
 
-//    @Bean
-//    public RepositoryItemWriter<Student> writer() {
-//        RepositoryItemWriter<Student> writer = new RepositoryItemWriter<>();
-//        writer.setRepository(studentRepository);
-//        writer.setMethodName("save");
-//        return writer;
-//    }
 
     @Bean
     public StudentRangePartation partitioner() {
@@ -76,13 +74,10 @@ public class SpringBatchConfig {
 
 
     @Bean
-    public Step childStep(
-            JobRepository jobRepository,
-            PlatformTransactionManager platformTransactionManager
-    ) {
+    public Step childStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager, FlatFileItemReader<Student> reader) {
         return new StepBuilder("step1", jobRepository)
                 .<Student, Student>chunk(250, platformTransactionManager)
-                .reader(reader())
+                .reader(reader)
                 .processor(processor())
                 .writer(studentWriter)
 //                .taskExecutor(taskExecutor())
@@ -90,9 +85,9 @@ public class SpringBatchConfig {
     }
 
     @Bean
-    public Job job(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
+    public Job job(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager, FlatFileItemReader<Student> reader) {
         return new JobBuilder("importCsv", jobRepository)
-                .flow(childStep(jobRepository, platformTransactionManager))
+                .flow(childStep(jobRepository, platformTransactionManager, reader))
                 .end()
                 .build();
     }
@@ -108,22 +103,22 @@ public class SpringBatchConfig {
     }
 
 
-     //partition handler
+    //partition handler
     @Bean
-    public TaskExecutorPartitionHandler partitionHandler(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
+    public TaskExecutorPartitionHandler partitionHandler(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager, FlatFileItemReader<Student> reader) {
         TaskExecutorPartitionHandler partitionHandler = new TaskExecutorPartitionHandler();
         partitionHandler.setGridSize(4);
-        partitionHandler.setStep(childStep(jobRepository, platformTransactionManager));
+        partitionHandler.setStep(childStep(jobRepository, platformTransactionManager, reader));
         partitionHandler.setTaskExecutor(taskExecutor());
         return partitionHandler;
     }
 
     //steps
     @Bean
-    public Step parentStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
+    public Step parentStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager, FlatFileItemReader<Student> reader) {
         return new StepBuilder("parentStep", jobRepository)
                 .partitioner("childStep", partitioner())
-                .partitionHandler(partitionHandler(jobRepository, platformTransactionManager))
+                .partitionHandler(partitionHandler(jobRepository, platformTransactionManager, reader))
                 .build();
     }
 
