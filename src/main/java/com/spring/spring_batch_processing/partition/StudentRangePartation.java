@@ -18,6 +18,7 @@ public class StudentRangePartation implements Partitioner {
         int min = 1;
         int max = 1000;
         int targetSize = (max - min) / gridSize + 1;
+        System.out.println("targetSize:--------------> " + targetSize);
 
         Map<String, ExecutionContext> result = new HashMap<>();
 
@@ -40,7 +41,9 @@ public class StudentRangePartation implements Partitioner {
             end += targetSize;
             number++;
         }
-        log.info("Partitioning completed"+result.toString());
+//        log.info("Partitioning completed"+result.toString());
+        System.out.println("partition result:" + result.toString());
         return result;
     }
+
 }

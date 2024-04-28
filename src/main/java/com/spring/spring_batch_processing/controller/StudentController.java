@@ -27,6 +27,7 @@ public class StudentController {
                     .addLong("time", System.currentTimeMillis())
                     .toJobParameters();
             jobLauncher.run(job, jobParameters);
+
         } catch (Exception e) {
             e.printStackTrace();
         }

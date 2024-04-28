@@ -8,6 +8,8 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @Slf4j
 public class StudentWriter implements ItemWriter<Student> {
@@ -18,8 +20,9 @@ public class StudentWriter implements ItemWriter<Student> {
 
     @Override
     public void write(Chunk<? extends Student> chunk) throws Exception {
-        log.info("Current Thread: " + Thread.currentThread().getName() + " Writing chunk: " + chunk.size()
-        + "-----------------------------------------------------");
+        System.out.println("Thread Name : -"+  Thread.currentThread().getName());
         studentRepository.saveAll(chunk);
     }
+
+
 }

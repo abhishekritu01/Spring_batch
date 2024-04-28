@@ -81,7 +81,7 @@ public class SpringBatchConfig {
             PlatformTransactionManager platformTransactionManager
     ) {
         return new StepBuilder("step1", jobRepository)
-                .<Student, Student>chunk(500, platformTransactionManager)
+                .<Student, Student>chunk(250, platformTransactionManager)
                 .reader(reader())
                 .processor(processor())
                 .writer(studentWriter)
@@ -97,6 +97,7 @@ public class SpringBatchConfig {
                 .build();
     }
 
+    //task executor
     @Bean
     protected TaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
@@ -104,18 +105,20 @@ public class SpringBatchConfig {
         taskExecutor.setMaxPoolSize(4);
         taskExecutor.setQueueCapacity(4);
         return taskExecutor;
-
     }
 
+
+     //partition handler
     @Bean
     public TaskExecutorPartitionHandler partitionHandler(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
         TaskExecutorPartitionHandler partitionHandler = new TaskExecutorPartitionHandler();
-        partitionHandler.setGridSize(2);
+        partitionHandler.setGridSize(4);
         partitionHandler.setStep(childStep(jobRepository, platformTransactionManager));
         partitionHandler.setTaskExecutor(taskExecutor());
         return partitionHandler;
     }
 
+    //steps
     @Bean
     public Step parentStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
         return new StepBuilder("parentStep", jobRepository)
